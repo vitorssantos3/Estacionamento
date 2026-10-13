@@ -30,3 +30,6 @@ Projeto desenvolvido para as Atividades Continuas (ACs) da faculdade, utilizando
 1. Instale as dependencias:
    ```bash
    pip install streamlit
+
+2. Rode o sistema:
+    streamlit run app.py
