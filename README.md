@@ -32,4 +32,5 @@ Projeto desenvolvido para as Atividades Continuas (ACs) da faculdade, utilizando
    pip install streamlit
 
 2. Rode o sistema:
+   ```bash
     streamlit run app.py
