@@ -60,3 +60,13 @@ def verificar_placa_ja_estacionada(placa_veiculo):
     conn.close()
     
     return resultado is not None
+
+def buscar_veiculo_por_placa(placa_veiculo):
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT id, placa, data_entrada, status FROM veiculos_patio WHERE placa = ? AND status = 'ATIVO'", (placa_veiculo,))
+    resultado = cursor.fetchone()
+    conn.close()
+    
+    return resultado
