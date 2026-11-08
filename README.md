@@ -25,6 +25,12 @@ Projeto desenvolvido para as Atividades Continuas (ACs) da faculdade, utilizando
   - De 31 a 60 minutos: R$ 10,00
   - Acima de 60 minutos: R$ 10,00 + R$ 2,00 por hora extra (ou fracao)
 
+### AC3
+- Integracao da consulta com o processo de **Checkout (Saída)** em uma unica aba intuitiva.
+- Calculo automatico do valor total da permanencia no momento da saida.
+- Selecao da forma de pagamento (Pix, Cartao de Credito/Debito ou Dinheiro).
+- Atualização do status do veiculo no banco de dados para `FINALIZADO` com registro do valor e forma de pagamento.
+
 ## Como Executar o Projeto
 
 1. Instale as dependencias:

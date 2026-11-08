@@ -9,7 +9,8 @@ db.init_db()
 
 st.title("Sistema de Gestao de Estacionamento")
 
-tab_entrada, tab_consulta = st.tabs(["Registrar Entrada", "Consulta de Permanencia"])
+# Agora estruturado em apenas 2 abas principais
+tab_entrada, tab_consulta = st.tabs(["Registrar Entrada", "Consulta e Checkout"])
 
 # ==========================================
 # ABA 1: REGISTRO DE ENTRADA
@@ -75,10 +76,10 @@ with tab_entrada:
         st.info("Nenhum veiculo no patio.")
 
 # ==========================================
-# ABA 2: CONSULTA DE PERMANENCIA
+# ABA 2: CONSULTA E CHECKOUT UNIFICADOS
 # ==========================================
 with tab_consulta:
-    st.subheader("Consultar Tempo de Permanencia e Valor")
+    st.subheader("Consulta de Permanência e Checkout")
     
     placa_consulta_raw = st.text_input("Digite a placa para consultar:", max_chars=8, key="input_consulta").upper().strip()
     btn_consultar = st.button("Consultar Veiculo")
@@ -100,33 +101,39 @@ with tab_consulta:
                 horas = total_segundos // 3600
                 minutos = (total_segundos % 3600) // 60
 
-                # Regra de Tarifa Atualizada:
-                # 0 a 15 min: Grátis (Tolerância)
-                # 16 a 30 min: R$ 5,00
-                # 31 a 60 min: R$ 10,00
-                # > 60 min: R$ 10,00 + R$ 2,00 por hora extra (ou fração)
+                # Regra de Tarifação
                 if total_minutos <= 15:
-                    valor_estimado = 0.0
+                    valor_total = 0.0
                 elif total_minutos <= 30:
-                    valor_estimado = 5.0
+                    valor_total = 5.0
                 elif total_minutos <= 60:
-                    valor_estimado = 10.0
+                    valor_total = 10.0
                 else:
                     TARIFA_PRIMEIRA_HORA = 10.0
                     TARIFA_HORA_ADICIONAL = 2.0
                     horas_totais_cobrada = math.ceil(total_segundos / 3600)
                     horas_adicionais = horas_totais_cobrada - 1
-                    valor_estimado = TARIFA_PRIMEIRA_HORA + (horas_adicionais * TARIFA_HORA_ADICIONAL)
+                    valor_total = TARIFA_PRIMEIRA_HORA + (horas_adicionais * TARIFA_HORA_ADICIONAL)
 
                 st.success(f"Veiculo localizado no patio. Status: {veiculo['status']}")
                 
                 col1, col2 = st.columns(2)
                 with col1:
                     st.metric("Tempo Estacionado", f"{horas}h {minutos}min")
-                    st.caption(f"Entrada registrada em: {veiculo['data_entrada']}")
+                    st.caption(f"Entrada: {veiculo['data_entrada']}")
                 with col2:
-                    st.metric("Valor Acumulado (Parcial)", f"R$ {valor_estimado:.2f}")
+                    st.metric("Valor Total", f"R$ {valor_total:.2f}")
                     st.caption("Tarifa: até 15min Grátis | 30min R$ 5 | 1h R$ 10 | +R$ 2/h extra")
+
+                st.write("---")
+                st.markdown("### Processar Saída (Checkout)")
+                
+                forma_pagamento = st.selectbox("Forma de Pagamento:", ["Pix", "Cartão de Crédito", "Cartão de Débito", "Dinheiro"], key=f"pag_{veiculo['id']}")
+
+                if st.button("Confirmar Pagamento e Finalizar Saída"):
+                    db.registrar_saida_veiculo(veiculo["id"], valor_total, forma_pagamento)
+                    st.success(f"Checkout realizado para a placa {placa_formatada}! Valor recebido: R$ {valor_total:.2f} via {forma_pagamento}.")
+                    st.rerun()
 
             else:
                 st.error("Veiculo nao localizado no patio ou ja finalizado.")
