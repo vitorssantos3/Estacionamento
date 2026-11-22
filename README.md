@@ -31,6 +31,11 @@ Projeto desenvolvido para as Atividades Continuas (ACs) da faculdade, utilizando
 - Selecao da forma de pagamento (Pix, Cartao de Credito/Debito ou Dinheiro).
 - Atualização do status do veiculo no banco de dados para `FINALIZADO` com registro do valor e forma de pagamento.
 
+### Prova Final
+- Aba de gerenciamento e relatorios com indicadores consolidados (faturamento total, saidas concluidas, ticket medio e ocupacao atual).
+- Grafico de faturamento agrupado por forma de pagamento.
+- Extrato completo de veiculos finalizados com filtro por forma de pagamento e exportacao em CSV.
+
 ## Como Executar o Projeto
 
 1. Instale as dependencias:
