@@ -12,7 +12,6 @@ def init_db():
     conn = get_connection()
     cursor = conn.cursor()
     
-    # Cria a tabela caso ela não exista
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS veiculos_patio (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -25,16 +24,15 @@ def init_db():
         )
     ''')
     
-    # Garantia para bancos já existentes: adiciona as colunas novas caso não existam
     try:
         cursor.execute("ALTER TABLE veiculos_patio ADD COLUMN valor_pago REAL")
     except sqlite3.OperationalError:
-        pass # Coluna já existe
+        pass
 
     try:
         cursor.execute("ALTER TABLE veiculos_patio ADD COLUMN forma_pagamento TEXT")
     except sqlite3.OperationalError:
-        pass # Coluna já existe
+        pass
 
     conn.commit()
     conn.close()
@@ -100,3 +98,19 @@ def registrar_saida_veiculo(id_veiculo, valor_pago, forma_pagamento):
     cursor.execute(sql_update, (data_hora_saida, 'FINALIZADO', valor_pago, forma_pagamento, id_veiculo))
     conn.commit()
     conn.close()
+
+def buscar_veiculos_finalizados():
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    sql_select = """
+        SELECT id, placa, data_entrada, data_saida, valor_pago, forma_pagamento 
+        FROM veiculos_patio 
+        WHERE status = 'FINALIZADO' 
+        ORDER BY data_saida DESC
+    """
+    cursor.execute(sql_select)
+    linhas = cursor.fetchall()
+    
+    conn.close()
+    return linhas

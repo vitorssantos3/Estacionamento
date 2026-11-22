@@ -2,6 +2,8 @@ import streamlit as st
 import database as db
 from datetime import datetime
 import math
+import csv
+import io
 
 st.set_page_config(page_title="Gestao de Estacionamento", layout="centered")
 
@@ -9,8 +11,11 @@ db.init_db()
 
 st.title("Sistema de Gestao de Estacionamento")
 
-# Agora estruturado em apenas 2 abas principais
-tab_entrada, tab_consulta = st.tabs(["Registrar Entrada", "Consulta e Checkout"])
+tab_entrada, tab_consulta, tab_gerenciamento = st.tabs([
+    "Registrar Entrada", 
+    "Consulta e Checkout", 
+    "Gerenciamento"
+])
 
 # ==========================================
 # ABA 1: REGISTRO DE ENTRADA
@@ -91,7 +96,6 @@ with tab_consulta:
             veiculo = db.buscar_veiculo_por_placa(placa_formatada)
 
             if veiculo:
-                # Calculo do tempo decorrido
                 data_entrada = datetime.strptime(veiculo["data_entrada"], "%Y-%m-%d %H:%M:%S")
                 agora = datetime.now()
                 diferenca = agora - data_entrada
@@ -101,7 +105,6 @@ with tab_consulta:
                 horas = total_segundos // 3600
                 minutos = (total_segundos % 3600) // 60
 
-                # Regra de Tarifação
                 if total_minutos <= 15:
                     valor_total = 0.0
                 elif total_minutos <= 30:
@@ -139,3 +142,85 @@ with tab_consulta:
                 st.error("Veiculo nao localizado no patio ou ja finalizado.")
         elif placa_consulta_raw:
             st.warning("A placa informada deve ter 7 caracteres.")
+
+# ==========================================
+# ABA 3: GERENCIAMENTO E RELATÓRIOS 
+# ==========================================
+with tab_gerenciamento:
+    st.subheader("Painel Gerencial e Relatórios")
+
+    finalizados = db.buscar_veiculos_finalizados()
+    ativos = db.buscar_veiculos_estacionados()
+
+    total_faturado = sum((item["valor_pago"] or 0.0) for item in finalizados)
+    qtd_finalizados = len(finalizados)
+    qtd_ativos = len(ativos)
+    ticket_medio = (total_faturado / qtd_finalizados) if qtd_finalizados > 0 else 0.0
+
+    # Indicadores principais
+    m1, m2, m3, m4 = st.columns(4)
+    m1.metric("Faturamento Total", f"R$ {total_faturado:.2f}")
+    m2.metric("Saídas Concluídas", qtd_finalizados)
+    m3.metric("Ticket Médio", f"R$ {ticket_medio:.2f}")
+    m4.metric("No Pátio Agora", qtd_ativos)
+
+    st.write("---")
+
+    if finalizados:
+        # Agrupamento por forma de pagamento
+        st.markdown("### Faturamento por Forma de Pagamento")
+        totais_pagamento = {}
+        for item in finalizados:
+            forma = item["forma_pagamento"] or "Não informado"
+            valor = item["valor_pago"] or 0.0
+            totais_pagamento[forma] = totais_pagamento.get(forma, 0.0) + valor
+
+        st.bar_chart(totais_pagamento)
+
+        st.write("---")
+        st.markdown("### Extrato de Veículos Finalizados")
+
+        # Filtro por forma de pagamento
+        formas_disponiveis = ["Todas"] + list(totais_pagamento.keys())
+        filtro_forma = st.selectbox("Filtrar por forma de pagamento:", formas_disponiveis)
+
+        registros_filtrados = [
+            item for item in finalizados
+            if filtro_forma == "Todas" or (item["forma_pagamento"] or "Não informado") == filtro_forma
+        ]
+
+        tabela_extrato = []
+        for item in registros_filtrados:
+            tabela_extrato.append({
+                "ID": item["id"],
+                "Placa": item["placa"],
+                "Entrada": item["data_entrada"],
+                "Saída": item["data_saida"],
+                "Pagamento": item["forma_pagamento"] or "-",
+                "Valor Pago": f"R$ {(item['valor_pago'] or 0.0):.2f}"
+            })
+
+        st.table(tabela_extrato)
+
+        # Geração de CSV para download
+        output = io.StringIO()
+        writer = csv.writer(output, delimiter=";")
+        writer.writerow(["ID", "Placa", "Entrada", "Saida", "Forma de Pagamento", "Valor Pago"])
+        for item in registros_filtrados:
+            writer.writerow([
+                item["id"],
+                item["placa"],
+                item["data_entrada"],
+                item["data_saida"],
+                item["forma_pagamento"] or "",
+                f"{(item['valor_pago'] or 0.0):.2f}"
+            ])
+
+        st.download_button(
+            label="Baixar Extrato (CSV)",
+            data=output.getvalue().encode("utf-8-sig"),
+            file_name="extrato_estacionamento.csv",
+            mime="text/csv"
+        )
+    else:
+        st.info("Ainda não há veículos finalizados para exibir no relatório. Realize um checkout na aba 'Consulta e Checkout' para gerar dados.")
