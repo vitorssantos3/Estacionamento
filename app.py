@@ -224,3 +224,4 @@ with tab_gerenciamento:
         )
     else:
         st.info("Ainda não há veículos finalizados para exibir no relatório. Realize um checkout na aba 'Consulta e Checkout' para gerar dados.")
+        
